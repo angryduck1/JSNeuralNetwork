@@ -72,6 +72,7 @@ class Perceptron {
         this.hiddenOutputSize2 = hiddenOutputSize2;
         this.outputSize = outputSize;
         this.learningWeight = learningWeight;
+        this.lessErrors = 0;
 
         this.weights_i_h1 = Array.from({ length: hiddenOutputSize1 }, () =>
             Array.from({ length: inputSize }, () => Math.random() * 2 - 1)
@@ -166,6 +167,8 @@ class Perceptron {
         for (let i = 0; i < this.outputSize; ++i) {
             outputErrors[i] = target[i] - outputs[i];
             outputDelta[i] = outputErrors[i] * sigmoidDerivative(outputs[i]);
+            
+            this.lessErrors += outputErrors[i];
         }
 
         let hiddenErrors2 = new Array(this.hiddenOutputSize2).fill(0);
@@ -173,6 +176,7 @@ class Perceptron {
         for (let h = 0; h < this.hiddenOutputSize2; h++) {
             for (let o = 0; o < this.outputSize; o++) {
                 hiddenErrors2[h] += outputDelta[o] * this.weights_o[o][h];
+                this.lessErrors += hiddenErrors2[h];
             }
             hiddenDelta2[h] = hiddenErrors2[h] * sigmoidDerivative(outputs_h1_h2[h]);
         }
@@ -182,6 +186,7 @@ class Perceptron {
         for (let h = 0; h < this.hiddenOutputSize1; h++) {
             for (let o = 0; o < this.hiddenOutputSize2; o++) {
                 hiddenErrors1[h] += hiddenDelta2[o] * this.weights_h1_h2[o][h];
+                this.lessErrors += hiddenErrors1[h];
             }
             hiddenDelta1[h] = hiddenErrors1[h] * sigmoidDerivative(outputs_i_h1[h]);
         }
@@ -223,7 +228,6 @@ async function updateArray(lastX, lastY, currentX, currentY) {
         }
     }
 }
-
 
 document.addEventListener("mousemove", (event) => {
     if (drawing) {
@@ -280,15 +284,15 @@ document.addEventListener("keypress", (event) => {
             const goodProb = result[0];
             const badProb = result[1];
 
-            const goodProcents = ((goodProb - badProb) * 100).toFixed(2);
-            const badProcents = ((badProb - goodProb) * 100).toFixed(2);
+            const goodProcents = (goodProb * 100).toFixed(2);
+            const badProcents = (badProb * 100).toFixed(2);
 
             if (goodProb > badProb) {
                 alert(`I think this is GOOD. Probability GOOD: ${goodProcents}% Probability BAD: ${badProcents}%`);
             } else {
                 alert(`I think this is BAD. Probability BAD: ${badProcents}% Probability GOOD: ${goodProcents}%`);
             }
-            
+
             array.fill(0);
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.beginPath();
@@ -310,13 +314,18 @@ document.addEventListener("keypress", (event) => {
             shuffle(trainData);
             for (const sample of trainData) {
                 net.train(sample.input, sample.target);
+                console.log(net.lessErrors);
             }
         }
         alert("Обучение завершено");
-    } else if (event.key.toLowerCase() == "s") {
+    } else if (event.key.toLowerCase() === "s") {
         saveProgress(net, "data.json");
-    } else if (event.key.toLowerCase() == "l") {
+    } else if (event.key.toLowerCase() === "l") {
         loadProgress(net, "data.json");
+    } else if (event.key.toLowerCase() === "x") {
+        array.fill(0);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.beginPath();
     }
 });
 
