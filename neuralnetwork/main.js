@@ -72,7 +72,6 @@ class Perceptron {
         this.hiddenOutputSize2 = hiddenOutputSize2;
         this.outputSize = outputSize;
         this.learningWeight = learningWeight;
-        this.lessErrors = 0;
 
         this.weights_i_h1 = Array.from({ length: hiddenOutputSize1 }, () =>
             Array.from({ length: inputSize }, () => Math.random() * 2 - 1)
@@ -167,8 +166,6 @@ class Perceptron {
         for (let i = 0; i < this.outputSize; ++i) {
             outputErrors[i] = target[i] - outputs[i];
             outputDelta[i] = outputErrors[i] * sigmoidDerivative(outputs[i]);
-            
-            this.lessErrors += outputErrors[i];
         }
 
         let hiddenErrors2 = new Array(this.hiddenOutputSize2).fill(0);
@@ -176,7 +173,6 @@ class Perceptron {
         for (let h = 0; h < this.hiddenOutputSize2; h++) {
             for (let o = 0; o < this.outputSize; o++) {
                 hiddenErrors2[h] += outputDelta[o] * this.weights_o[o][h];
-                this.lessErrors += hiddenErrors2[h];
             }
             hiddenDelta2[h] = hiddenErrors2[h] * sigmoidDerivative(outputs_h1_h2[h]);
         }
@@ -186,7 +182,6 @@ class Perceptron {
         for (let h = 0; h < this.hiddenOutputSize1; h++) {
             for (let o = 0; o < this.hiddenOutputSize2; o++) {
                 hiddenErrors1[h] += hiddenDelta2[o] * this.weights_h1_h2[o][h];
-                this.lessErrors += hiddenErrors1[h];
             }
             hiddenDelta1[h] = hiddenErrors1[h] * sigmoidDerivative(outputs_i_h1[h]);
         }
@@ -307,14 +302,28 @@ document.addEventListener("keypress", (event) => {
         const trainData = [...good, ...bad];
         const initialLearningWeight = net.learningWeight;
 
-        for (let epoch = 0; epoch < 5000; epoch++) {
+        let epochError = 0;
+
+        for (let epoch = 0; epoch < 2000; epoch++) {
             if (epoch % 100 === 0) {
                 net.learningWeight = initialLearningWeight * Math.pow(0.95, epoch / 100);
             }
+
             shuffle(trainData);
+
+            let epochError = 0;
+
             for (const sample of trainData) {
                 net.train(sample.input, sample.target);
-                console.log(net.lessErrors);
+                const outputs = net.predict(sample.input);
+
+                for (let i = 0; i < outputs.length; i++) {
+                    epochError += Math.abs(sample.target[i] - outputs[i]);
+                }
+            }
+
+            if (epoch % 100 === 0) {
+                console.log(`Epoch ${epoch}: error = ${(epochError / trainData.length).toFixed(4)}`);
             }
         }
         alert("Обучение завершено");
