@@ -288,7 +288,7 @@ document.addEventListener("keypress", (event) => {
             } else {
                 alert(`I think this is BAD. Probability BAD: ${badProcents}% Probability GOOD: ${goodProcents}%`);
             }
-
+            
             array.fill(0);
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.beginPath();
