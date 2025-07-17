@@ -13,6 +13,58 @@ function shuffle(array) {
     }
 }
 
+async function saveProgress(net) {
+    const data = {
+        inputSize: net.inputSize,
+        hiddenOutputSize1: net.hiddenOutputSize1,
+        hiddenOutputSize2: net.hiddenOutputSize2,
+        outputSize: net.outputSize,
+        weights_i_h1: net.weights_i_h1,
+        weights_h1_h2: net.weights_h1_h2,
+        weights_o: net.weights_o,
+        biases_i_h1: net.biases_i_h1,
+        biases_h1_h2: net.biases_h1_h2,
+        biases_o: net.biases_o,
+    };
+
+    const jsonStr = JSON.stringify(data, null, 2);
+    const blob = new Blob([jsonStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "data.json";
+    a.click();
+
+    URL.revokeObjectURL(url);
+}
+
+function loadProgress(net) {
+    fetch("./data.json")
+        .then(response => response.json())
+        .then(data => {
+            net.inputSize = data.inputSize;
+            net.hiddenOutputSize1 = data.hiddenOutputSize1;
+            net.hiddenOutputSize2 = data.hiddenOutputSize2;
+            net.outputSize = data.outputSize;
+
+            net.weights_i_h1 = data.weights_i_h1;
+            net.weights_h1_h2 = data.weights_h1_h2;
+            net.weights_o = data.weights_o;
+
+            net.biases_i_h1 = data.biases_i_h1;
+            net.biases_h1_h2 = data.biases_h1_h2;
+            net.biases_o = data.biases_o;
+
+            alert("Succesfull initializating machine progress");
+
+            is_load = true;
+        })
+        .catch(err => {
+            alert(`Error initializating machine progress: ${err}`);
+        })
+}
+
 class Perceptron {
     constructor(inputSize, outputSize, hiddenOutputSize1, hiddenOutputSize2, learningWeight = 0.1) {
         this.inputSize = inputSize;
@@ -222,13 +274,19 @@ document.addEventListener("keypress", (event) => {
             ctx.beginPath();
         }
     } else if (event.key.toLowerCase() === "r") {
-        if (good.length !== 0 && bad.length !== 0) {
+        if ((good.length !== 0 && bad.length !== 0) || is_load) {
             const result = net.predict(array);
 
-            if (result[0] > result[1]) {
-                alert("I think what you draw GOOD");
+            const goodProb = result[0];
+            const badProb = result[1];
+
+            const goodProcents = ((goodProb - badProb) * 100).toFixed(2);
+            const badProcents = ((badProb - goodProb) * 100).toFixed(2);
+
+            if (goodProb > badProb) {
+                alert(`I think this is GOOD. Probability GOOD: ${goodProcents}% Probability BAD: ${badProcents}%`);
             } else {
-                alert("I think what you draw BAD");
+                alert(`I think this is BAD. Probability BAD: ${badProcents}% Probability GOOD: ${goodProcents}%`);
             }
 
             array.fill(0);
@@ -255,6 +313,10 @@ document.addEventListener("keypress", (event) => {
             }
         }
         alert("Обучение завершено");
+    } else if (event.key.toLowerCase() == "s") {
+        saveProgress(net, "data.json");
+    } else if (event.key.toLowerCase() == "l") {
+        loadProgress(net, "data.json");
     }
 });
 
@@ -270,6 +332,8 @@ badStatus = false;
 
 let lastX = 0;
 let lastY = 0;
+
+let is_load = false;;
 
 let array = new Array(WEIGHT * HEIGHT).fill(0);
 
