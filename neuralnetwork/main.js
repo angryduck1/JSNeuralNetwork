@@ -65,6 +65,35 @@ function loadProgress(net) {
         })
 }
 
+function trainPerceptron(net, data) {
+    const trainData = [...data];
+    const initialLearningWeight = net.learningWeight;
+
+    for (let epoch = 0; epoch < 2000; epoch++) {
+        if (epoch % 100 === 0) {
+            net.learningWeight = initialLearningWeight * Math.pow(0.95, epoch / 100);
+        }
+
+        shuffle(trainData);
+
+        let epochError = 0;
+
+        for (const sample of trainData) {
+            net.train(sample.input, sample.target);
+            const outputs = net.predict(sample.input);
+
+            for (let i = 0; i < outputs.length; i++) {
+                epochError += Math.abs(sample.target[i] - outputs[i]);
+            }
+        }
+
+        if (epoch % 100 === 0) {
+            console.log(`Epoch ${epoch}: error = ${(epochError / trainData.length).toFixed(4)}`);
+        }
+    }
+    alert("Learning was end");
+}
+
 class Perceptron {
     constructor(inputSize, outputSize, hiddenOutputSize1, hiddenOutputSize2, learningWeight = 0.1) {
         this.inputSize = inputSize;
@@ -254,7 +283,7 @@ document.addEventListener("mousedown", (event) => {
     lastY = event.offsetY;
 });
 
-document.addEventListener("keypress", (event) => {
+document.addEventListener("keydown", (event) => {
     if (event.key.toLowerCase() === "p") {
         goodStatus = !goodStatus;
         badStatus = !goodStatus;
@@ -292,17 +321,47 @@ document.addEventListener("keypress", (event) => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.beginPath();
         }
+    } else if (event.key.toLowerCase() === "f") {
+        if ((good.length !== 0 && bad.length !== 0) || is_load) {
+            const result = net.predict(array);
+
+            const goodProb = result[0];
+            const badProb = result[1];
+
+            const goodProcents = (goodProb * 100).toFixed(2);
+            const badProcents = (badProb * 100).toFixed(2);
+
+            if (goodProb > badProb) {
+                const result = confirm(`Correct?: I think this is GOOD. Probability GOOD: ${goodProcents}% Probability BAD: ${badProcents}%`);
+
+                if (!result) {
+                    const data = [{ input: [...array], target: [0, 1] }];
+
+                    trainPerceptron(net, data);
+                }
+            } else {
+                const result = confirm(`I think this is BAD. Probability BAD: ${badProcents}% Probability GOOD: ${goodProcents}%`);
+
+                if (!result) {
+                    const data = [{input: [...array], target: [1, 0] }];
+
+                    trainPerceptron(net, data);
+                }
+            }
+
+            array.fill(0);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.beginPath();
+        }
     } else if (event.key.toLowerCase() === "t") {
         console.log(good.length);
         console.log(bad.length);
         if (good.length === 0 || bad.length === 0) {
-            alert("Добавьте примеры и для GOOD и для BAD");
+            alert("Add example for GOOD and for BAD");
             return;
         }
         const trainData = [...good, ...bad];
         const initialLearningWeight = net.learningWeight;
-
-        let epochError = 0;
 
         for (let epoch = 0; epoch < 2000; epoch++) {
             if (epoch % 100 === 0) {
@@ -326,7 +385,7 @@ document.addEventListener("keypress", (event) => {
                 console.log(`Epoch ${epoch}: error = ${(epochError / trainData.length).toFixed(4)}`);
             }
         }
-        alert("Обучение завершено");
+        alert("Learning was enda");
     } else if (event.key.toLowerCase() === "s") {
         saveProgress(net, "data.json");
     } else if (event.key.toLowerCase() === "l") {
